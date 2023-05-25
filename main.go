@@ -27,9 +27,62 @@ func getCommands() map[string]command {
 			description: "see 20 locations on the map",
 			callback:    commandMap,
 		},
+		"mapb": {
+			name:        "mapb",
+			description: "see previous 20 location areas on the map",
+			callback:    commandMapB,
+		},
 	}
 
 	return commands
+}
+
+func commandMapB(config *Config) error {
+
+	type Response struct {
+		Count    int     `json:"count"`
+		Next     *string `json:"next"`
+		Previous *string `json:"previous"`
+		Results  []struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"results"`
+	}
+
+	var locationAreaEndPoint string
+	if config.prev != nil {
+		locationAreaEndPoint = *config.prev
+	} else {
+		locationAreaEndPoint = "https://pokeapi.co/api/v2/location-area"
+	}
+
+	resp, err := http.Get(locationAreaEndPoint)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	response := Response{}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("\n")
+	for _, loc := range response.Results {
+		fmt.Printf(" %s\n", loc.Name)
+	}
+	fmt.Printf("\n")
+
+	config.next = response.Next
+	config.prev = response.Previous
+
+	return nil
 }
 
 func commandMap(config *Config) error {
