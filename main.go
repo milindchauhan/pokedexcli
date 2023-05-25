@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -49,12 +50,10 @@ func commandMapB(config *Config) error {
 		} `json:"results"`
 	}
 
-	var locationAreaEndPoint string
-	if config.prev != nil {
-		locationAreaEndPoint = *config.prev
-	} else {
-		locationAreaEndPoint = "https://pokeapi.co/api/v2/location-area"
+	if config.prev == nil {
+		return errors.New("you are already on the first page")
 	}
+	locationAreaEndPoint := *config.prev
 
 	resp, err := http.Get(locationAreaEndPoint)
 	if err != nil {
@@ -177,7 +176,10 @@ func main() {
 		}
 
 		if command, ok := getCommands()[line]; ok {
-			command.callback(&config)
+			err := command.callback(&config)
+			if err != nil {
+				fmt.Println(err)
+			}
 		} else {
 			fmt.Printf("\n Invalid command. Use \"help\" to see available commands \n\n")
 		}
