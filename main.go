@@ -32,21 +32,27 @@ func getCommands() map[string]command {
 	return commands
 }
 
-func commandMap() error {
+func commandMap(config *Config) error {
 
 	type Response struct {
-		Count    int    `json:"count"`
-		Next     string `json:"next"`
-		Previous any    `json:"previous"`
+		Count    int     `json:"count"`
+		Next     *string `json:"next"`
+		Previous *string `json:"previous"`
 		Results  []struct {
 			Name string `json:"name"`
 			URL  string `json:"url"`
 		} `json:"results"`
 	}
 
-	locationAreaEndPoint := "https://pokeapi.co/api/v2/location-area"
-	res, err := http.Get(locationAreaEndPoint)
+	var locationAreaEndPoint string
 
+	if config.next != nil {
+		locationAreaEndPoint = *(config.next)
+	} else {
+		locationAreaEndPoint = "https://pokeapi.co/api/v2/location-area"
+	}
+
+	res, err := http.Get(locationAreaEndPoint)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,7 +65,6 @@ func commandMap() error {
 
 	response := Response{}
 	err = json.Unmarshal(body, &response)
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,10 +75,12 @@ func commandMap() error {
 	}
 	fmt.Printf("\n\n")
 
+	config.next = response.Next
+	config.prev = response.Previous
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(config *Config) error {
 	fmt.Printf("\n Welcome to the Pokedex \n\n\n")
 
 	for name, command := range getCommands() {
@@ -85,7 +92,7 @@ func commandHelp() error {
 	return nil
 }
 
-func commandExit() error {
+func commandExit(config *Config) error {
 	os.Exit(0)
 	return nil
 }
@@ -93,13 +100,20 @@ func commandExit() error {
 type command struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*Config) error
+}
+
+type Config struct {
+	next *string
+	prev *string
 }
 
 func main() {
 	fmt.Printf("\n hello, from the pokedex! \n\n")
 
 	scanner := bufio.NewScanner(os.Stdin)
+	config := Config{}
+
 	for {
 		fmt.Printf("pokedex > ")
 		scanner.Scan()
@@ -110,7 +124,7 @@ func main() {
 		}
 
 		if command, ok := getCommands()[line]; ok {
-			command.callback()
+			command.callback(&config)
 		} else {
 			fmt.Printf("\n Invalid command. Use \"help\" to see available commands \n\n")
 		}
