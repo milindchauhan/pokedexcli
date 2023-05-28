@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/milindchauhan/pokedexcli/internal/pokecache"
 )
 
 func getCommands() map[string]command {
@@ -38,7 +40,7 @@ func getCommands() map[string]command {
 	return commands
 }
 
-func commandMapB(config *Config) error {
+func commandMapB(config *Config, cache *pokecache.PokeCache) error {
 
 	type Response struct {
 		Count    int     `json:"count"`
@@ -84,7 +86,7 @@ func commandMapB(config *Config) error {
 	return nil
 }
 
-func commandMap(config *Config) error {
+func commandMap(config *Config, cache *pokecache.PokeCache) error {
 
 	type Response struct {
 		Count    int     `json:"count"`
@@ -104,19 +106,24 @@ func commandMap(config *Config) error {
 		locationAreaEndPoint = "https://pokeapi.co/api/v2/location-area"
 	}
 
-	res, err := http.Get(locationAreaEndPoint)
-	if err != nil {
-		log.Fatal(err)
-	}
+	body, ok := cache.Get(locationAreaEndPoint)
+	if !ok {
+		resp, err := http.Get(locationAreaEndPoint)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		log.Fatal(err)
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		cache.Add(locationAreaEndPoint, body)
 	}
 
 	response := Response{}
-	err = json.Unmarshal(body, &response)
+	err := json.Unmarshal(body, &response)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -132,7 +139,7 @@ func commandMap(config *Config) error {
 	return nil
 }
 
-func commandHelp(config *Config) error {
+func commandHelp(config *Config, cache *pokecache.PokeCache) error {
 	fmt.Printf("\n Welcome to the Pokedex \n\n\n")
 
 	for name, command := range getCommands() {
@@ -144,7 +151,7 @@ func commandHelp(config *Config) error {
 	return nil
 }
 
-func commandExit(config *Config) error {
+func commandExit(config *Config, cache *pokecache.PokeCache) error {
 	os.Exit(0)
 	return nil
 }
@@ -152,7 +159,7 @@ func commandExit(config *Config) error {
 type command struct {
 	name        string
 	description string
-	callback    func(*Config) error
+	callback    func(*Config, *pokecache.PokeCache) error
 }
 
 type Config struct {
@@ -165,6 +172,7 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	config := Config{}
+	cache := pokecache.NewCache(60)
 
 	for {
 		fmt.Printf("pokedex > ")
@@ -176,7 +184,7 @@ func main() {
 		}
 
 		if command, ok := getCommands()[line]; ok {
-			err := command.callback(&config)
+			err := command.callback(&config, cache)
 			if err != nil {
 				fmt.Println(err)
 			}
