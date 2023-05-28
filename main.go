@@ -27,7 +27,7 @@ func getCommands() map[string]command {
 		},
 		"map": {
 			name:        "map",
-			description: "see 20 locations on the map",
+			description: "see next 20 location areas on the map",
 			callback:    commandMap,
 		},
 		"mapb": {
