@@ -57,19 +57,24 @@ func commandMapB(config *Config, cache *pokecache.PokeCache) error {
 	}
 	locationAreaEndPoint := *config.prev
 
-	resp, err := http.Get(locationAreaEndPoint)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var body []byte
+	body, ok := cache.Get(locationAreaEndPoint)
+	if !ok {
+		resp, err := http.Get(locationAreaEndPoint)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	body, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		log.Fatal(err)
+		body, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+
 	}
 
 	response := Response{}
-	err = json.Unmarshal(body, &response)
+	err := json.Unmarshal(body, &response)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,6 +111,7 @@ func commandMap(config *Config, cache *pokecache.PokeCache) error {
 		locationAreaEndPoint = "https://pokeapi.co/api/v2/location-area"
 	}
 
+	var body []byte
 	body, ok := cache.Get(locationAreaEndPoint)
 	if !ok {
 		resp, err := http.Get(locationAreaEndPoint)
@@ -113,7 +119,7 @@ func commandMap(config *Config, cache *pokecache.PokeCache) error {
 			log.Fatal(err)
 		}
 
-		body, err := io.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if err != nil {
 			log.Fatal(err)

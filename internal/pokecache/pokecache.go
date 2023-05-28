@@ -41,6 +41,9 @@ func (p *PokeCache) Get(key string) ([]byte, bool) {
 	p.mtx.RLock()
 	defer p.mtx.RUnlock()
 	res, ok := p.cache[key]
+	if !ok {
+		return nil, false
+	}
 
 	// leaving an intentional bug here for now. the res value can be nil and can cause the program to panic
 	return res.val, ok
