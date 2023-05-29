@@ -46,10 +46,6 @@ func getCommands() map[string]command {
 	return commands
 }
 
-func commandExplore(config *Config, cache *pokecache.PokeCache) error {
-	return nil
-}
-
 func commandMapB(config *Config, cache *pokecache.PokeCache) error {
 
 	type Response struct {
@@ -203,13 +199,15 @@ func main() {
 		args := strings.Fields(line)
 		config.args = &args
 
+		fmt.Printf("\n")
 		if command, ok := getCommands()[args[0]]; ok {
 			err := command.callback(&config, cache)
 			if err != nil {
 				fmt.Println(err)
 			}
 		} else {
-			fmt.Printf("\n Invalid command. Use \"help\" to see available commands \n\n")
+			fmt.Printf("\n Invalid command. Use \"help\" to see available commands \n")
 		}
+		fmt.Printf("\n")
 	}
 }
