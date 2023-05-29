@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/milindchauhan/pokedexcli/internal/pokecache"
 )
@@ -35,9 +36,18 @@ func getCommands() map[string]command {
 			description: "see previous 20 location areas on the map",
 			callback:    commandMapB,
 		},
+		"explore": {
+			name:        "explore",
+			description: "explore an area to see the pokemon available there",
+			callback:    commandExplore,
+		},
 	}
 
 	return commands
+}
+
+func commandExplore(config *Config, cache *pokecache.PokeCache) error {
+	return nil
 }
 
 func commandMapB(config *Config, cache *pokecache.PokeCache) error {
@@ -171,6 +181,7 @@ type command struct {
 type Config struct {
 	next *string
 	prev *string
+	args *[]string
 }
 
 func main() {
@@ -189,7 +200,10 @@ func main() {
 			break
 		}
 
-		if command, ok := getCommands()[line]; ok {
+		args := strings.Fields(line)
+		config.args = &args
+
+		if command, ok := getCommands()[args[0]]; ok {
 			err := command.callback(&config, cache)
 			if err != nil {
 				fmt.Println(err)
